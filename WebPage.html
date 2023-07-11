@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>ESP8266 Captive Portal Command Line</title>
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+			}
+
+			body {
+				background-color: rgb(35, 35, 35);
+			}
+
+			#terminal {
+				font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+				font-size: medium;
+				margin: 15px;
+				color: white;
+			}
+
+			#input {
+				position: fixed;
+				background: transparent;
+				color: rgb(150, 150, 150);
+				font-family: inherit;
+				font-size: inherit;
+				width: 100%;
+				border: hidden;
+				outline: none;
+				resize: none;
+				overflow: hidden;
+				text-indent: 13px;
+			}
+
+			.log {
+				font-family: inherit;
+				font-size: inherit;
+				white-space: pre-wrap;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="terminal">
+			<div id="input-holder">
+				<p style="position: fixed; color: rgb(150, 150, 150)">$</p>
+				<textarea id="input" rows="1"></textarea>
+			</div>
+		</div>
+		<script>
+			const terminal = document.getElementById("terminal");
+			const inputHolder = document.getElementById("input-holder");
+			const input = document.getElementById("input");
+			function createOutput(value) {
+				let element = value;
+				if (!(element instanceof HTMLElement || element instanceof HTMLDocument)) {
+					element = document.createElement("pre");
+					element.className = "log";
+					element.innerHTML = String(value);
+				}
+				terminal.append(element, inputHolder);
+				return element;
+			}
+			input.addEventListener("input", inputEvent => {
+				input.style.height = 0;
+  				input.style.height = input.scrollHeight + "px";
+			});
+			input.addEventListener("keypress", keyboardEvent => {
+				if (keyboardEvent.keyCode === 13 && !keyboardEvent.shiftKey) {
+					keyboardEvent.preventDefault();
+					const {value} = input;
+					createOutput(`$ ${value}`).style.color = "rgb(150, 150, 150)";
+					processCommand(value);
+					input.value = "";
+					input.focus();
+				}
+			});
+			window.addEventListener("click", event => input.focus());
+			function processCommand(commandString) {
+				if (commandString.trim() === "") {
+					createOutput("Please type a command or type \"help\" to see all commands.").style.color = "rgb(255, 100, 100)";
+					return;
+				}
+				const args = commandString.split(/\s/g);
+				switch (args[0].toLowerCase()) {
+					case "help":
+						break;
+					default:
+						createOutput("Invalid command, type \"help\" to see all commands").style.color = "rgb(255, 100, 100)";
+				}
+			}
+			createOutput("Welcome to ESP8266 Remote Captive Portal Command Line, type \"help\" for a list of command you can use.");
+		</script>
+	</body>
+</html>
