@@ -1,121 +1,159 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>ESP8266 Captive Portal Command Line</title>
-		<style>
-			* {
-				margin: 0;
-				padding: 0;
-				cursor: text;
-			}
 
-			body {
-				background-color: rgb(35, 35, 35);
-			}
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>ESP8266 Captive Portal Command Line</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			cursor: default;
+		}
 
-			#terminal {
-				font-family: monospace;
-				font-size: large;
-				margin: 15px;
-				color: white;
-			}
+		body {
+			background-color: rgb(35, 35, 35);
+		}
 
-			#input-holder {
-				position: relative;
-				color: rgb(150, 150, 150);
-			}
+		#terminal {
+			font-family: monospace;
+			font-size: large;
+			margin: 15px;
+			color: white;
+		}
 
-			.input-prompt {
-				position: absolute;
-				color: inherit;
-			}
+		#input-holder {
+			position: relative;
+			color: rgb(150, 150, 150);
+		}
 
-			#input {
-				position: absolute;
-				background: transparent;
-				color: inherit;
-				font-family: inherit;
-				font-size: inherit;
-				width: 100%;
-				border: hidden;
-				outline: none;
-				resize: none;
-				overflow: hidden;
-				text-indent: 27px;
-			}
+		#input-prompt {
+			position: absolute;
+			color: inherit;
+			white-space: pre;
+		}
 
-			.log {
-				font-family: inherit;
-				font-size: inherit;
-				white-space: pre-wrap;
-			}
-		</style>
-	</head>
-	<body>
-		<div id="terminal">
-			<div id="input-holder">
-				<p class="input-prompt">>></p>
-				<textarea id="input" rows="1"></textarea>
-			</div>
+		#input {
+			position: absolute;
+			background: transparent;
+			color: inherit;
+			font-family: inherit;
+			font-size: inherit;
+			width: 100%;
+			border: hidden;
+			outline: none;
+			resize: none;
+			overflow: hidden;
+		}
+
+		.log {
+			font-family: inherit;
+			font-size: inherit;
+			white-space: pre-wrap;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="terminal">
+		<div id="input-holder">
+			<p id="input-prompt"></p>
+			<textarea id="input" rows="1"></textarea>
 		</div>
-		<script>
-			const {entries} = Object;
-			const terminal = document.getElementById("terminal");
-			const inputHolder = document.getElementById("input-holder");
-			const input = document.getElementById("input");
-			function createOutput(value, disableHTML) {
-				let element = value;
-				if (!(element instanceof HTMLElement || element instanceof HTMLDocument)) {
-					element = document.createElement("pre");
-					element.className = "log";
-					element[disableHTML ? "textContent" : "innerHTML"] = String(value);
+	</div>
+	<script>
+		const { entries } = Object;
+		const terminal = document.getElementById("terminal");
+		const inputHolder = document.getElementById("input-holder");
+		const inputPrompt = document.getElementById("input-prompt");
+		const input = document.getElementById("input");
+		function escapeHTML(html) {
+			return html.replace(/[&<"'>]/g, match => {
+				switch (match) {
+					case "&":
+						return "&amp;";
+					case "<":
+						return "&lt;";
+					case ">":
+						return "&gt;";
+					case "\"":
+						return "&quot;";
+					case "'":
+						return "&#39;";
 				}
-				terminal.append(element, inputHolder);
-				return element;
-			}
-			input.addEventListener("input", inputEvent => {
-				input.style.height = 0;
-  				input.style.height = input.scrollHeight + "px";
 			});
-			const commands = {
-				help: {
-					desc: "Show list of all commands or formats of a command by typing \"help &lt;command?: string&gt;\"",
-					usages: {
-						"help": "Show list of all commands",
-						"help &lt;command: string&gt;": "Show instructions for a command"
-					},
-					handler(args) {
-						if (args.length <= 1) {
-							for (const [name, {desc}] of entries(commands))
-								createOutput(`<b>${name}:</b> ${desc}`);
-						} else {
-							const command = commands[args[1]];
-							if (command)
-								for (const [format, desc] of entries(command.usages))
-									createOutput(`<b>${format}</b> - ${desc}`);
-							else
-							throw new Error("Invalid command, type \"help\" to see all commands.");
-						}
-					}
+		}
+		function createOutput(value) {
+			let element = value;
+			if (!(element instanceof HTMLElement || element instanceof HTMLDocument)) {
+				element = document.createElement("pre");
+				element.className = "log";
+				element.innerHTML = String(value) || "\n";
+			}
+			terminal.append(element, inputHolder);
+			return element;
+		}
+		function setCustomPrompt(text = "") {
+			inputPrompt.innerHTML = text;
+			input.style.textIndent = `${inputPrompt.offsetWidth}px`;
+		}
+		input.addEventListener("input", inputEvent => {
+			input.style.height = 0;
+			input.style.height = input.scrollHeight + "px";
+		});
+		let webSocket;
+		const commands = {
+			help: {
+				desc: "Show list of all commands or formats of a command by typing \"help <command?: string>\"",
+				usages: {
+					"help": "Show list of all commands",
+					"help <command: string>": "Show instructions for a command"
 				},
-				clear: {
-					desc: "Clear all messages in the output",
-					usages: {"clear": "Clear all messages in the output"},
-					handler(args) {
-						for (const logElement of document.querySelectorAll(".log"))
-							logElement.remove();
+				handler(args) {
+					if (args.length <= 1) {
+						for (const [name, {desc}] of entries(commands))
+							createOutput(`<b>${escapeHTML(name)}:</b> ${escapeHTML(desc)}`);
+					} else {
+						const command = commands[args[1]];
+						if (command)
+							for (const [format, desc] of entries(command.usages))
+								createOutput(escapeHTML(`<b>${escapeHTML(format)}</b> - ${escapeHTML(desc)}`));
+						else
+							throw new Error("Invalid command, type \"help\" to see all commands.");
 					}
 				}
-			};
-			input.addEventListener("keypress", keyboardEvent => {
-				if (keyboardEvent.keyCode === 13) {
-					keyboardEvent.preventDefault();
+			},
+			clear: {
+				desc: "Clear all messages in the output",
+				usages: { "clear": "Clear all messages in the output" },
+				handler(args) {
+					for (const logElement of document.querySelectorAll(".log"))
+						logElement.remove();
+				}
+			}
+		};
+		let currentValue = input.value;
+		let commandHistory = [];
+		let historyIndex = null;
+		input.addEventListener("keydown", keyboardEvent => {
+			const {keyCode} = keyboardEvent;
+			const {length: historyLength} = commandHistory;
+			if (keyboardEvent.key.length === 1 && historyIndex != null)
+				commandHistory[historyIndex] = input.value;
+			if (keyCode === 13 || keyCode === 38 || keyCode === 40)
+				keyboardEvent.preventDefault();
+			switch (keyCode) {
+				case 13:
 					const {value} = input;
-					createOutput(`${document.getElementsByClassName("input-prompt")[0].textContent} ${value}`, true).style.color = "rgb(150, 150, 150)";
+					const trimmedValue = value.trim();
+					if (trimmedValue && value[0] !== " " && commandHistory[commandHistory.length - 1] !== value)
+						commandHistory.push(value);
+					currentValue = input.value;
+					historyIndex = null;
+					createOutput(`${inputPrompt.innerHTML}${escapeHTML(value)}`).style.color = "rgb(150, 150, 150)";
 					try {
-						if (value.trim()) {
-							const args = value.split(/\s/g);
+						if (trimmedValue) {
+							const args = value.trimStart().split(/\s/g);
 							const command = commands[args[0]];
 							if (command) {
 								command.handler(args);
@@ -127,10 +165,30 @@
 					}
 					input.value = "";
 					input.focus();
-				}
-			});
-			window.addEventListener("click", event => input.focus());
-			createOutput("Welcome to ESP8266 Remote Captive Portal Command Line, type \"help\" for a list of command you can use.");
-		</script>
-	</body>
+					break;
+				case 38:
+					// up
+					currentValue = input.value;
+					if (historyLength > 0) {
+						historyIndex = Math.max(0, (historyIndex != null ? historyIndex : historyLength) - 1);
+						input.value = commandHistory[historyIndex];
+					}
+					break;
+				case 40:
+					//down
+					if (historyIndex != null) {
+						historyIndex++;
+						input.value = commandHistory[historyIndex] ?? currentValue;
+						if (historyIndex > historyLength - 1)
+							historyLength = null;
+					}
+			}
+		});
+		window.addEventListener("click", event => input.focus());
+		setCustomPrompt("<b>$</b> ");
+		createOutput("Welcome to ESP8266 Remote Captive Portal Command Line, type \"help\" for a list of command you can use.");
+		//input.focus();
+	</script>
+</body>
+
 </html>
