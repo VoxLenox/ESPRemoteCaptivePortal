@@ -7,6 +7,7 @@
 			* {
 				margin: 0;
 				padding: 0;
+				cursor: text;
 			}
 
 			body {
@@ -14,16 +15,26 @@
 			}
 
 			#terminal {
-				font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-				font-size: medium;
+				font-family: monospace;
+				font-size: large;
 				margin: 15px;
 				color: white;
 			}
 
-			#input {
-				position: fixed;
-				background: transparent;
+			#input-holder {
+				position: relative;
 				color: rgb(150, 150, 150);
+			}
+
+			.input-prompt {
+				position: absolute;
+				color: inherit;
+			}
+
+			#input {
+				position: absolute;
+				background: transparent;
+				color: inherit;
 				font-family: inherit;
 				font-size: inherit;
 				width: 100%;
@@ -31,7 +42,7 @@
 				outline: none;
 				resize: none;
 				overflow: hidden;
-				text-indent: 13px;
+				text-indent: 27px;
 			}
 
 			.log {
@@ -44,20 +55,21 @@
 	<body>
 		<div id="terminal">
 			<div id="input-holder">
-				<p style="position: fixed; color: rgb(150, 150, 150)">$</p>
+				<p class="input-prompt">>></p>
 				<textarea id="input" rows="1"></textarea>
 			</div>
 		</div>
 		<script>
+			const {entries} = Object;
 			const terminal = document.getElementById("terminal");
 			const inputHolder = document.getElementById("input-holder");
 			const input = document.getElementById("input");
-			function createOutput(value) {
+			function createOutput(value, disableHTML) {
 				let element = value;
 				if (!(element instanceof HTMLElement || element instanceof HTMLDocument)) {
 					element = document.createElement("pre");
 					element.className = "log";
-					element.innerHTML = String(value);
+					element[disableHTML ? "textContent" : "innerHTML"] = String(value);
 				}
 				terminal.append(element, inputHolder);
 				return element;
@@ -66,30 +78,58 @@
 				input.style.height = 0;
   				input.style.height = input.scrollHeight + "px";
 			});
+			const commands = {
+				help: {
+					desc: "Show list of all commands or formats of a command by typing \"help &lt;command?: string&gt;\"",
+					usages: {
+						"help": "Show list of all commands",
+						"help &lt;command: string&gt;": "Show instructions for a command"
+					},
+					handler(args) {
+						if (args.length <= 1) {
+							for (const [name, {desc}] of entries(commands))
+								createOutput(`<b>${name}:</b> ${desc}`);
+						} else {
+							const command = commands[args[1]];
+							if (command)
+								for (const [format, desc] of entries(command.usages))
+									createOutput(`<b>${format}</b> - ${desc}`);
+							else
+							throw new Error("Invalid command, type \"help\" to see all commands.");
+						}
+					}
+				},
+				clear: {
+					desc: "Clear all messages in the output",
+					usages: {"clear": "Clear all messages in the output"},
+					handler(args) {
+						for (const logElement of document.querySelectorAll(".log"))
+							logElement.remove();
+					}
+				}
+			};
 			input.addEventListener("keypress", keyboardEvent => {
-				if (keyboardEvent.keyCode === 13 && !keyboardEvent.shiftKey) {
+				if (keyboardEvent.keyCode === 13) {
 					keyboardEvent.preventDefault();
 					const {value} = input;
-					createOutput(`$ ${value}`).style.color = "rgb(150, 150, 150)";
-					processCommand(value);
+					createOutput(`${document.getElementsByClassName("input-prompt")[0].textContent} ${value}`, true).style.color = "rgb(150, 150, 150)";
+					try {
+						if (value.trim()) {
+							const args = value.split(/\s/g);
+							const command = commands[args[0]];
+							if (command) {
+								command.handler(args);
+							} else
+								throw new Error("Invalid command, type \"help\" to see all commands.");
+						}
+					} catch (err) {
+						createOutput(err).style.color = "rgb(255, 50, 50)"
+					}
 					input.value = "";
 					input.focus();
 				}
 			});
 			window.addEventListener("click", event => input.focus());
-			function processCommand(commandString) {
-				if (commandString.trim() === "") {
-					createOutput("Please type a command or type \"help\" to see all commands.").style.color = "rgb(255, 100, 100)";
-					return;
-				}
-				const args = commandString.split(/\s/g);
-				switch (args[0].toLowerCase()) {
-					case "help":
-						break;
-					default:
-						createOutput("Invalid command, type \"help\" to see all commands").style.color = "rgb(255, 100, 100)";
-				}
-			}
 			createOutput("Welcome to ESP8266 Remote Captive Portal Command Line, type \"help\" for a list of command you can use.");
 		</script>
 	</body>
