@@ -133,23 +133,26 @@
 			}
 		};
 		let currentValue = input.value;
-		let commandHistory = [];
+		let commandHistory;
+		try {
+			commandHistory = JSON.parse(localStorage.getItem("commandHistory"));
+			commandHistory = Array.isArray(commandHistory) ? commandHistory : [];
+		} catch (err) {
+			commandHistory = [];
+		}
 		let historyIndex = null;
 		input.addEventListener("keydown", keyboardEvent => {
-			const {keyCode} = keyboardEvent;
+			const {key} = keyboardEvent;
 			const {length: historyLength} = commandHistory;
-			if (keyboardEvent.key.length === 1 && historyIndex != null)
-				commandHistory[historyIndex] = input.value;
-			if (keyCode === 13 || keyCode === 38 || keyCode === 40)
+			const maxHistoryIndex = historyLength - 1;
+			if (key === "Enter" || key === "ArrowUp" || key === "ArrowDown")
 				keyboardEvent.preventDefault();
-			switch (keyCode) {
-				case 13:
+			switch (key) {
+				case "Enter":
 					const {value} = input;
 					const trimmedValue = value.trim();
-					if (trimmedValue && value[0] !== " " && commandHistory[commandHistory.length - 1] !== value)
+					if (trimmedValue && value[0] !== " " && commandHistory[maxHistoryIndex] !== value)
 						commandHistory.push(value);
-					currentValue = input.value;
-					historyIndex = null;
 					createOutput(`${inputPrompt.innerHTML}${escapeHTML(value)}`).style.color = "rgb(150, 150, 150)";
 					try {
 						if (trimmedValue) {
@@ -163,31 +166,44 @@
 					} catch (err) {
 						createOutput(err).style.color = "rgb(255, 50, 50)"
 					}
-					input.value = "";
+					input.value = ""
+					currentValue = input.value;
+					historyIndex = null;
 					input.focus();
 					break;
-				case 38:
-					// up
-					currentValue = input.value;
-					if (historyLength > 0) {
-						historyIndex = Math.max(0, (historyIndex != null ? historyIndex : historyLength) - 1);
+				case "ArrowUp":
+					if (historyIndex != null || historyLength > 0) {
+						historyIndex = Math.max(0, historyIndex != null ? historyIndex - 1 : maxHistoryIndex);
 						input.value = commandHistory[historyIndex];
 					}
 					break;
-				case 40:
-					//down
-					if (historyIndex != null) {
+				case "ArrowDown":
+					if (historyIndex != null && historyIndex <= maxHistoryIndex) {
 						historyIndex++;
 						input.value = commandHistory[historyIndex] ?? currentValue;
-						if (historyIndex > historyLength - 1)
-							historyLength = null;
+						if (historyIndex > maxHistoryIndex)
+							historyIndex = null;
 					}
 			}
 		});
+		input.addEventListener("keyup", keyboardEvent => {
+			if (keyboardEvent.key.length === 1)
+				if (historyIndex != null)
+					commandHistory[historyIndex] = input.value;
+				else
+					currentValue = input.value;
+		});
 		window.addEventListener("click", event => input.focus());
+		window.addEventListener("beforeunload", beforeUnloadEvent => {
+			try {
+				localStorage.setItem("commandHistory", JSON.stringify(commandHistory));
+			} catch (err) {
+				console.error("Cannot save command history:", err)
+			}
+		});
 		setCustomPrompt("<b>$</b> ");
 		createOutput("Welcome to ESP8266 Remote Captive Portal Command Line, type \"help\" for a list of command you can use.");
-		//input.focus();
+		input.focus();
 	</script>
 </body>
 
