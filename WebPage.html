@@ -1,285 +1,100 @@
 <!DOCTYPE html>
 <html>
-
-<head>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-	<title>ESP8266 Captive Portal Command Line</title>
-	<style>
-		* {
-			margin: 0;
-			padding: 0;
-			cursor: default;
-		}
-
-		body {
-			background-color: rgb(35, 35, 35);
-		}
-
-		#terminal {
-			font-family: monospace;
-			font-size: large;
-			margin: 15px;
-			color: white;
-		}
-
-		#input-holder {
-			position: relative;
-			color: rgb(150, 150, 150);
-		}
-
-		#input-prompt {
-			position: absolute;
-			color: inherit;
-			white-space: pre;
-		}
-
-		#input {
-			position: absolute;
-			background: transparent;
-			color: inherit;
-			font-family: inherit;
-			font-size: inherit;
-			width: 100%;
-			border: hidden;
-			outline: none;
-			resize: none;
-			overflow: hidden;
-		}
-
-		.log {
-			font-family: inherit;
-			font-size: inherit;
-			white-space: pre-wrap;
-		}
-	</style>
-</head>
-
-<body>
-	<div id="terminal">
-		<div id="input-holder">
-			<p id="input-prompt"></p>
-			<textarea id="input" rows="1"></textarea>
-		</div>
-	</div>
-	<script>
-		// "Never judge a person by their codes."
-		const { entries } = Object;
-		const terminal = document.getElementById("terminal");
-		const inputHolder = document.getElementById("input-holder");
-		const inputPrompt = document.getElementById("input-prompt");
-		const input = document.getElementById("input");
-		function escapeHTML(html) {
-			return html.replace(/[&<"'>]/g, match => {
-				switch (match) {
-					case "&":
-						return "&amp;";
-					case "<":
-						return "&lt;";
-					case ">":
-						return "&gt;";
-					case "\"":
-						return "&quot;";
-					case "'":
-						return "&#39;";
-				}
-			});
-		}
-		function createOutput(value) {
-			const previouslyFocused = document.activeElement === input;
-			let element = value;
-			if (!(element instanceof HTMLElement || element instanceof HTMLDocument)) {
-				element = document.createElement("pre");
-				element.className = "log";
-				element.innerHTML = String(value) || "\n";
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Remote Captive Portal Manager</title>
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
 			}
-			terminal.append(element, inputHolder);
-			if (previouslyFocused)
-				input.focus();
-			return element;
-		}
-		function setCustomPrompt(text = "") {
-			inputPrompt.innerHTML = text;
-			input.style.textIndent = `${inputPrompt.offsetWidth}px`;
-		}
-		input.addEventListener("input", inputEvent => {
-			input.style.height = 0;
-			input.style.height = input.scrollHeight + "px";
-		});
-		let webSocket;
-		const commands = {
-			help: {
-				desc: "Show list of all commands or formats of a command by typing \"help <command?: string>\".",
-				usages: {
-					"help": "Show list of all commands.",
-					"help <command: string>": "Show instructions for a command."
-				},
-				handler(args) {
-					if (args.length <= 1) {
-						for (const [name, {desc}] of entries(commands))
-							createOutput(`<b>${escapeHTML(name)}:</b> ${escapeHTML(desc)}`);
-					} else {
-						const command = commands[args[1]];
-						if (command)
-							for (const [format, desc] of entries(command.usages))
-								createOutput(`<b>${escapeHTML(format)}</b> - ${escapeHTML(desc)}`);
-						else
-							throw new Error("Invalid command, type \"help\" to see all commands.");
-					}
-				}
-			},
-			clear: {
-				desc: "Clear all messages in the output.",
-				usages: { "clear": "Clear all messages in the output." },
-				handler(args) {
-					for (const logElement of document.querySelectorAll(".log"))
-						logElement.remove();
-				}
-			},
-			state: {
-				desc: "Check the current state of connection between client and ESP8266.",
-				usages: { "state": "Check the current state of connection between client and ESP8266." },
-				handler(args) {
-					let state = "Unknown";
-					switch (webSocket?.readyState) {
-						case undefined:
-							state = "Not established";
-							break;
-						case WebSocket.OPENING:
-							state = "Connecting";
-							break;
-						case WebSocket.OPEN:
-							state = "Connected";
-						case WebSocket.CLOSING:
-							state = "Disconnecting";
-							break;
-						case WebSocket.CLOSED:
-							state = "Not connected";
-					}
-					createOutput(state);
-				}
-			},
-			login: {
-				desc: "Login (connect) to server using a passcode.",
-				usages: {
-					"login": "Login (connect) to server using saved key.",
-					"login <passcode: string>": "Login (connect) to server using a passcode."
-				},
-				handler(args) {
-					if ("WebSocket" in window)
-						if (args.length >= 2)
-							if (!webSocket || webSocket.readyState === WebSocket.CLOSED) {
-								try {
-									createOutput("Logging in...");
-									webSocket = new WebSocket(`ws://${location.host}/${args.slice(1).join(" ")}`);
-									webSocket.addEventListener("open", () => createOutput("Successfully logged in, feel free to use the command line now!"));
-									webSocket.addEventListener("error", () => createOutput("Error: Failed to login, please check your passcode to see if it correct and also check your ESP8266.").style.color = "rgb(255, 50, 50)");
-								} catch (err) {
-									throw new Error(`Failed to login due to a unexpected error (${err}).`);
-								}
-							} else
-								throw new Error("You're already logged in.");
-						else
-							throw new Error("No passcode provided.");
-					else
-						throw new Error("WebSocket is not supported on your browser, update your current browser or install another browser that support WebSocket if you want to login.");
+
+			body {
+				font-family: Arial, Helvetica, sans-serif;
+			}
+
+			#login-container {
+				display: none;
+				justify-content: center;
+				align-items: center;
+				height: 100vh;
+			}
+
+			.login-form {
+				width: 300px;
+				padding: 20px;
+				background-color: rgb(240, 240, 240);
+				border-radius: 5px;
+				display: flex;
+				flex-direction: column;
+				align-items: stretch;
+			}
+
+			.login-form-title {
+				color: rgb(60, 60, 60);
+				text-align: center;
+				margin-bottom: 20px;
+			}
+
+			#login-password {
+				width: 100%;
+				padding: 10px;
+				box-sizing: border-box;
+				border: 1px solid rgb(100, 100, 100);
+				border-radius: 5px;
+			}
+
+			#login-error {
+				display: none;
+				color: rgb(255, 50, 50);
+				font-family: Arial, Helvetica, sans-serif;
+				font-size: small;
+				margin-top: 2px;
+			}
+
+			.login-remember-label {
+				display: flex;
+				align-items: center;
+				margin-top: 5px;
+				font-size: small;
+			}
+
+			#login-remember-checkbox {
+				margin-right: 5px;
+			}
+
+			#login-button {
+				width: 100%;
+				padding: 10px;
+				margin-top: 5px;
+				box-sizing: border-box;
+				background-color: #4CAF50;
+				color: white;
+				border: none;
+				border-radius: 5px;
+			}
+
+			@media (max-width: 500px) {
+				.login-form {
+					width: 60%;
 				}
 			}
-		};
-		let currentValue = input.value;
-		let commandHistory;
-		try {
-			commandHistory = JSON.parse(localStorage.getItem("commandHistory"));
-			commandHistory = Array.isArray(commandHistory) ? commandHistory : [];
-		} catch (err) {
-			commandHistory = [];
-		}
-		let historyIndex = null;
-		input.addEventListener("keydown", keyboardEvent => {
-			const {key} = keyboardEvent;
-			const {length: historyLength} = commandHistory;
-			const maxHistoryIndex = historyLength - 1;
-			if (key === "Enter" || key === "ArrowUp" || key === "ArrowDown")
-				keyboardEvent.preventDefault();
-			switch (key) {
-				case "Enter":
-					const {value} = input;
-					input.value = "";
-					currentValue = input.value;
-					historyIndex = null;
-					const trimmedValue = value.trim();
-					if (value[0] !== " " && trimmedValue && commandHistory[maxHistoryIndex] !== value)
-						commandHistory.push(value);
-					createOutput(`${inputPrompt.innerHTML}${escapeHTML(value)}`).style.color = "rgb(150, 150, 150)";
-					try {
-						if (trimmedValue) {
-							const args = value.trimStart().split(/\s/g);
-							const command = commands[args[0]];
-							if (command) {
-								command.handler(args, value);
-							} else
-								throw new Error("Invalid command, type \"help\" to see all commands.");
-						}
-					} catch (err) {
-						createOutput(err).style.color = "rgb(255, 50, 50)";
-					}
-					input.focus();
-					break;
-				case "ArrowUp":
-					if (historyIndex != null || historyLength > 0) {
-						historyIndex = Math.max(0, historyIndex != null ? historyIndex - 1 : maxHistoryIndex);
-						input.value = commandHistory[historyIndex];
-					}
-					break;
-				case "ArrowDown":
-					if (historyIndex != null && historyIndex <= maxHistoryIndex) {
-						historyIndex++;
-						input.value = commandHistory[historyIndex] ?? currentValue;
-						if (historyIndex > maxHistoryIndex)
-							historyIndex = null;
-					}
-					break;
-				case "PageUp":
-					// Matching command history
-					break;
-				case "PageDown":
-					// Matching command history
-			}
-		});
-		input.addEventListener("keyup", keyboardEvent => {
-			if (keyboardEvent.key.length === 1)
-				if (historyIndex != null)
-					commandHistory[historyIndex] = input.value;
-				else
-					currentValue = input.value;
-		});
-		window.addEventListener("click", event => input.focus());
-		window.addEventListener("beforeunload", beforeUnloadEvent => {
-			try {
-				localStorage.setItem("commandHistory", JSON.stringify(commandHistory));
-			} catch (err) {}
-		});
-		setCustomPrompt("$ ");
-		createOutput("Welcome to ESP8266 Remote Captive Portal Command Line, type \"help\" for a list of command you can use.");
-		if ("WebSocket" in window) {
-			const savedPasscode = localStorage.getItem("passcode");
-			if (savedPasscode) {
-				try {
-					createOutput("Saved passcode detected. Attempting to login using the passcode.");
-					webSocket = new WebSocket(`ws://${location.host}/${savedPasscode}`);
-					webSocket.addEventListener("open", () => createOutput("Successfully logged in, feel free to use the command line now!"));
-					webSocket.addEventListener("error", () => createOutput("Error: Failed to login, please check your passcode to see if it correct and also check your ESP8266.").style.color = "rgb(255, 50, 50)");
-				} catch (err) {
-					createOutput(`Error: Failed to login due to a unexpected error (${err}).`).style.color = "rgb(255, 50, 50)";
-				}
-			} else {
-				createOutput(`Before continue using the command line, you will need to be logged in by using this command: <b>${escapeHTML("login <passcode: string>")}</b>`);
-				createOutput("If this is your first time using this and you don't know the password then you can check for the default passcode on the project GitHub page.");
-				createOutput("After you logged in, remember to change the default passcode if you haven't.");
-			}
-		} else
-			createOutput("Error: WebSocket is not supported on your browser, update your current browser or install another browser that support WebSocket if you want to login.").style.color = "rgb(255, 50, 50)";
-		input.focus();
-	</script>
-</body>
-
+		</style>
+	</head>
+	<body>
+		<div id="login-container">
+			<div class="login-form">
+				<h2 class="login-form-title">LOGIN</h2>
+				<input type="password" placeholder="Enter password" id="login-password">
+				<p id="login-error"></p>
+				<label class="login-remember-label">
+					<input type="checkbox" id="login-remember-checkbox">
+					Remember me
+				</label>
+				<button id="login-button">Login</button>
+			</div>
+		</div>		  
+		<script></script>
+	</body>
 </html>
