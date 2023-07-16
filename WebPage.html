@@ -10,10 +10,6 @@
 				padding: 0;
 			}
 
-			body {
-				font-family: Arial, Helvetica, sans-serif;
-			}
-
 			#login-container {
 				display: none;
 				justify-content: center;
@@ -21,7 +17,7 @@
 				height: 100vh;
 			}
 
-			.login-form {
+			#login-form {
 				width: 300px;
 				padding: 20px;
 				background-color: rgb(240, 240, 240);
@@ -29,12 +25,21 @@
 				display: flex;
 				flex-direction: column;
 				align-items: stretch;
+				box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.15);
 			}
 
 			.login-form-title {
 				color: rgb(60, 60, 60);
 				text-align: center;
-				margin-bottom: 20px;
+				margin-bottom: 5px;
+			}
+
+			.login-bar {
+				width: 50%;
+				border: 1px solid rgb(200, 200, 200);
+				border-radius: 1px;
+				margin: 0 auto;
+				margin-bottom: 10px;
 			}
 
 			#login-password {
@@ -51,16 +56,17 @@
 				font-family: Arial, Helvetica, sans-serif;
 				font-size: small;
 				margin-top: 2px;
+				margin-bottom: -3px;
 			}
 
-			.login-remember-label {
+			.login-save-label {
 				display: flex;
 				align-items: center;
-				margin-top: 5px;
 				font-size: small;
+				margin-top: 5px;
 			}
 
-			#login-remember-checkbox {
+			#login-save-checkbox {
 				margin-right: 5px;
 			}
 
@@ -77,24 +83,53 @@
 
 			@media (max-width: 500px) {
 				.login-form {
-					width: 60%;
+					width: 80%;
 				}
 			}
 		</style>
 	</head>
 	<body>
 		<div id="login-container">
-			<div class="login-form">
+			<form id="login-form">
 				<h2 class="login-form-title">LOGIN</h2>
-				<input type="password" placeholder="Enter password" id="login-password">
-				<p id="login-error"></p>
-				<label class="login-remember-label">
-					<input type="checkbox" id="login-remember-checkbox">
-					Remember me
+				<hr class="login-bar" />
+				<input type="password" placeholder="Enter password" id="login-password" required />
+				<p id="login-error">An unexpected error has occurred, please try again</p>
+				<label class="login-save-label">
+					<input type="checkbox" id="login-save-checkbox" />
+					Save password
 				</label>
-				<button id="login-button">Login</button>
-			</div>
-		</div>		  
-		<script></script>
+				<button id="login-button" type="submit">Login</button>
+			</form>
+		</div>
+		<script>
+			const originUrl = location.origin;
+
+			const loginContainer = document.getElementById("login-container");
+			const passwordInput = document.getElementById("login-password");
+			const loginErrorText = document.getElementById("login-error");
+			const savePasswordCheckbox = document.getElementById("login-save-checkbox");
+
+			document.getElementById("login-form").addEventListener("submit", submitEvent => {
+				submitEvent.preventDefault();
+				const password = passwordInput.checked;
+				const savePassword = savePasswordCheckbox.value;
+				fetch(`${originUrl}/password`).then(response => {
+					
+				}).catch(err => {
+					
+				});
+			});
+
+			const savedLoginPassword = sessionStorage.getItem("savedPassword") ?? localStorage.getItem("savedPassword");
+			if (savedLoginPassword != null)
+				fetch(`${originUrl}/${savedLoginPassword}`).then(response => {
+					
+				}).catch(err => {
+					
+				});
+			else
+				loginContainer.style.display = "flex";
+		</script>
 	</body>
 </html>
