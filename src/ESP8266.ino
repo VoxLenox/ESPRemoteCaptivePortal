@@ -5,7 +5,7 @@
 #include <ESPAsyncWebServer.h>
 #include <StreamUtils.h>
 
-const uint64_t CURRENT_DATA_VERSION = 1;
+const uint64_t CURRENT_DATA_VERSION = 2;
 const int SETTING_DATA_ADDRESS = 0;
 
 EepromStream eepromStream(0, SPI_FLASH_SEC_SIZE);
@@ -22,25 +22,7 @@ void saveSettings() {
   EEPROM.commit();
 }
 
-void setLedBrightness(const float &brightness = 0) {
-  digitalWrite(LED_BUILTIN, 1 - brightness);
-}
-
-void setup() {
-  Serial.begin(9600);
-  Serial.println("Starting...");
-  Serial.println("Current data version: " + CURRENT_DATA_VERSION);
-  Serial.println("Setting data address: " + SETTING_DATA_ADDRESS);
-  Serial.println("Setting data size & EEPROM size: " + SPI_FLASH_SEC_SIZE);
-  EEPROM.begin(SPI_FLASH_SEC_SIZE);
-  pinMode(LED_BUILTIN, OUTPUT);
-  setLedBrightness(LOW);
-
-  DeserializationError deserializationError = deserializeJson(settings, eepromStream);
-  Serial.println("Deserialized data from EEPROM: " + getSerializedSettingData());
-  Serial.println("Validating setting data...");
-  if (deserializationError != DeserializationError::Ok || settings["dataVersion"].as<uint64_t>() != CURRENT_DATA_VERSION) {
-    Serial.println("Unexpected error or data version not matched, resetting setting data...");
+void resetSettings() {
     settings["dataVersion"]        = CURRENT_DATA_VERSION;
 
     settings["apSSID"]             = "ESP8266"; // 32
@@ -76,8 +58,41 @@ void setup() {
     settings["captivePortalIP"][3] = 100;
 
     settings["captivePortalPort"]  = 8000;
-
     saveSettings();
+}
+
+void setLedBrightness(const float &brightness = 0) {
+  digitalWrite(LED_BUILTIN, 1 - brightness);
+}
+
+ArRequestHandlerFunction createHandler(ArRequestHandlerFunction handler) {
+  return [&handler](AsyncWebServerRequest *request) {
+    if (request->authenticate(settings["managerUser"].as<const char*>(), settings["managerPassword"].as<const char*>()))
+      handler(request);
+    else
+      request->requestAuthentication();
+  };
+}
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println("Starting...");
+  Serial.println("Current data version: " + CURRENT_DATA_VERSION);
+  Serial.println("Setting data address: " + SETTING_DATA_ADDRESS);
+  Serial.println("Setting data size & EEPROM size: " + SPI_FLASH_SEC_SIZE);
+  EEPROM.begin(SPI_FLASH_SEC_SIZE);
+  pinMode(LED_BUILTIN, OUTPUT);
+  setLedBrightness(LOW);
+
+  DeserializationError deserializationError = deserializeJson(settings, eepromStream);
+  Serial.println("Deserialized data from EEPROM: " + getSerializedSettingData());
+  Serial.println("Validating setting data...");
+  if (deserializationError != DeserializationError::Ok) {
+    Serial.println("Resetting setting data due to error: " + String(deserializationError.c_str()));
+    resetSettings();
+  } else if (settings["dataVersion"].as<uint64_t>() != CURRENT_DATA_VERSION) {
+    Serial.println("Resetting setting data due to data version not matched");
+    resetSettings();
   } else
     Serial.println("Setting data is valid");
 
@@ -109,31 +124,49 @@ void setup() {
 
   Serial.println("Setting up manager web server...");
   AsyncWebServer managerWebServer(settings["managerPort"].as<uint16_t>());
-  managerWebServer.on("/api", HTTP_ANY, [](AsyncWebServerRequest *request) {
-    if(request->authenticate(settings["managerUser"].as<const char*>(), settings["managerPassword"].as<const char*>()))
-      switch (request->method()) {
-        case HTTP_GET:
-          request->send(200, "application/json", getSerializedSettingData());
-          break;
-        case HTTP_POST:
-          break;
-        default:
-          request->send(405);
-      }
-    else
-      request->requestAuthentication();
-  });
-  managerWebServer.onNotFound([](AsyncWebServerRequest *request) {
-    if(request->authenticate(settings["managerUser"].as<const char*>(), settings["managerPassword"].as<const char*>()))
-      request->send_P(200, "text/html", "Hello, world");
-    else
-      request->requestAuthentication();
-  });
+
+  managerWebServer.on("/api", HTTP_ANY, createHandler([](AsyncWebServerRequest *request) {
+    request->send(403);
+  }));
+
+  managerWebServer.on("/api/settings", HTTP_ANY, createHandler([](AsyncWebServerRequest *request) {
+    switch (request->method()) {
+      case HTTP_GET:
+        request->send(200, "application/json", getSerializedSettingData());
+        break;
+      case HTTP_POST:
+        request->send(500); // Change this
+        break;
+      case HTTP_DELETE:
+        resetSettings();
+        request->send(204);
+        break;
+      default:
+        request->send(405);
+    }
+  }));
+
+  managerWebServer.on("/api/reboot", HTTP_ANY, createHandler([](AsyncWebServerRequest *request) {
+    if (request->method() == HTTP_POST) {
+      request->send(204);
+      ESP.restart();
+    } else
+      request->send(405);
+  }));
+
+  managerWebServer.onNotFound(createHandler([](AsyncWebServerRequest *request) {
+    if (request->method() == HTTP_GET) {
+      request->send(200, "text/html", "Hello, world"); // Change this
+    } else
+      request->send(405);
+  }));
+
   managerWebServer.begin();
   Serial.println("Manager web server is now ready for requests");
 
   Serial.println("Setting up a redirection server...");
   AsyncWebServer redirectionWebServer(80);
+
   redirectionWebServer.onNotFound([](AsyncWebServerRequest *request) {
     request->redirect("http://" + IPAddress(
       settings["captivePortalIP"][0].as<uint8_t>(),
@@ -145,6 +178,7 @@ void setup() {
     delay(10);
     setLedBrightness(LOW);
   });
+
   redirectionWebServer.begin();
   Serial.println("Redirection server is now ready for requests");
 
@@ -153,6 +187,7 @@ void setup() {
   dnsServer.start(53, "*", apLocalIP);
   Serial.println("DNS server is now ready");
   Serial.println("Everything ready");
+
   while (true) {
     dnsServer.processNextRequest();
   }
