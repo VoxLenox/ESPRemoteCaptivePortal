@@ -5,7 +5,7 @@
 #include <ESPAsyncWebServer.h>
 #include <StreamUtils.h>
 
-const uint64_t CURRENT_DATA_VERSION = 2;
+const uint64_t CURRENT_DATA_VERSION = 1;
 const int SETTING_DATA_ADDRESS = 0;
 
 EepromStream eepromStream(0, SPI_FLASH_SEC_SIZE);
@@ -23,55 +23,47 @@ void saveSettings() {
 }
 
 void resetSettings() {
-    settings["dataVersion"]        = CURRENT_DATA_VERSION;
+  settings["dataVersion"]        = CURRENT_DATA_VERSION;
 
-    settings["apSSID"]             = "ESP8266"; // 32
-    settings["apPassword"]         = "12345678"; // 63
-    settings["auth"]               = false;
-    settings["hidden"]             = false;
-    settings["channel"]            = 1;
-    settings["maxConnections"]     = 4;
-    settings["beaconInterval"]     = 100;
+  settings["apSSID"]             = "ESP8266"; // 32
+  settings["apPassword"]         = "12345678"; // 63
+  settings["auth"]               = false;
+  settings["hidden"]             = false;
+  settings["channel"]            = 1;
+  settings["maxConnections"]     = 4;
+  settings["beaconInterval"]     = 100;
 
-    settings["apLocalIP"][0]       = 192;
-    settings["apLocalIP"][1]       = 168;
-    settings["apLocalIP"][2]       = 4;
-    settings["apLocalIP"][3]       = 1;
+  settings["apLocalIP"][0]       = 192;
+  settings["apLocalIP"][1]       = 168;
+  settings["apLocalIP"][2]       = 4;
+  settings["apLocalIP"][3]       = 1;
 
-    settings["apGateway"][0]       = 192;
-    settings["apGateway"][1]       = 168;
-    settings["apGateway"][2]       = 4;
-    settings["apGateway"][3]       = 1;
+  settings["apGateway"][0]       = 192;
+  settings["apGateway"][1]       = 168;
+  settings["apGateway"][2]       = 4;
+  settings["apGateway"][3]       = 1;
 
-    settings["apSubnet"][0]        = 255;
-    settings["apSubnet"][1]        = 255;
-    settings["apSubnet"][2]        = 255;
-    settings["apSubnet"][3]        = 0;
+  settings["apSubnet"][0]        = 255;
+  settings["apSubnet"][1]        = 255;
+  settings["apSubnet"][2]        = 255;
+  settings["apSubnet"][3]        = 0;
 
-    settings["managerUser"]        = "manager"; // 20
-    settings["managerPassword"]    = "12345678"; // 128
-    settings["managerPort"]        = 8000;
+  settings["managerUser"]        = "manager"; // 20
+  settings["managerPassword"]    = "12345678"; // 128
+  settings["managerPort"]        = 8000;
 
-    settings["captivePortalIP"][0] = 192;
-    settings["captivePortalIP"][1] = 168;
-    settings["captivePortalIP"][2] = 4;
-    settings["captivePortalIP"][3] = 100;
+  settings["captivePortalIP"][0] = 192;
+  settings["captivePortalIP"][1] = 168;
+  settings["captivePortalIP"][2] = 4;
+  settings["captivePortalIP"][3] = 100;
 
-    settings["captivePortalPort"]  = 8000;
-    saveSettings();
+  settings["captivePortalPort"]  = 8000;
+
+  saveSettings();
 }
 
 void setLedBrightness(const float &brightness = 0) {
   digitalWrite(LED_BUILTIN, 1 - brightness);
-}
-
-ArRequestHandlerFunction createHandler(ArRequestHandlerFunction handler) {
-  return [&handler](AsyncWebServerRequest *request) {
-    if (request->authenticate(settings["managerUser"].as<const char*>(), settings["managerPassword"].as<const char*>()))
-      handler(request);
-    else
-      request->requestAuthentication();
-  };
 }
 
 void setup() {
@@ -125,41 +117,50 @@ void setup() {
   Serial.println("Setting up manager web server...");
   AsyncWebServer managerWebServer(settings["managerPort"].as<uint16_t>());
 
-  managerWebServer.on("/api", HTTP_ANY, createHandler([](AsyncWebServerRequest *request) {
-    request->send(403);
-  }));
+  managerWebServer.on("/api", HTTP_ANY, [](AsyncWebServerRequest *request) {
+    if (request->authenticate(settings["managerUser"].as<const char*>(), settings["managerPassword"].as<const char*>()))
+      if (request->hasParam("type")) {
+        const String apiType = request->getParam("type")->value();
+        if (apiType.equals("settings"))
+          switch (request->method()) {
+            case HTTP_GET:
+              request->send(200, "application/json", getSerializedSettingData());
+              break;
+            case HTTP_POST:
+              // Add logic to verify settings
+              saveSettings();
+              request->send(500); // Change this to 200 once setting modification added
+              break;
+            case HTTP_DELETE:
+              resetSettings();
+              request->send(204);
+              break;
+            default:
+              request->send(405);
+          }
+        else if (apiType.equals("reboot"))
+          if (request->method() == HTTP_POST) {
+            request->send(204);
+            ESP.restart();
+          } else
+            request->send(405);
+        else
+          request->send(400);
+      } else
+        request->send(400);
+    else
+      request->requestAuthentication();
+  });
 
-  managerWebServer.on("/api/settings", HTTP_ANY, createHandler([](AsyncWebServerRequest *request) {
-    switch (request->method()) {
-      case HTTP_GET:
-        request->send(200, "application/json", getSerializedSettingData());
-        break;
-      case HTTP_POST:
-        request->send(500); // Change this
-        break;
-      case HTTP_DELETE:
-        resetSettings();
-        request->send(204);
-        break;
-      default:
+  managerWebServer.onNotFound([](AsyncWebServerRequest *request) {
+    if (request->authenticate(settings["managerUser"].as<const char*>(), settings["managerPassword"].as<const char*>()))
+      if (request->method() == HTTP_GET) {
+        request->send(200, "text/html", "Hello, world"); // Change this to send main management page
+      } else
         request->send(405);
-    }
-  }));
-
-  managerWebServer.on("/api/reboot", HTTP_ANY, createHandler([](AsyncWebServerRequest *request) {
-    if (request->method() == HTTP_POST) {
-      request->send(204);
-      ESP.restart();
-    } else
-      request->send(405);
-  }));
-
-  managerWebServer.onNotFound(createHandler([](AsyncWebServerRequest *request) {
-    if (request->method() == HTTP_GET) {
-      request->send(200, "text/html", "Hello, world"); // Change this
-    } else
-      request->send(405);
-  }));
+    else
+      request->requestAuthentication();
+  });
 
   managerWebServer.begin();
   Serial.println("Manager web server is now ready for requests");
