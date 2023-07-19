@@ -5,7 +5,7 @@
 #include <ESPAsyncWebServer.h>
 #include <StreamUtils.h>
 
-const uint64_t CURRENT_DATA_VERSION = 1;
+const uint64_t CURRENT_DATA_VERSION = 2;
 const int SETTING_DATA_ADDRESS = 0;
 
 EepromStream eepromStream(0, SPI_FLASH_SEC_SIZE);
@@ -133,7 +133,7 @@ void setup() {
               break;
             case HTTP_DELETE:
               resetSettings();
-              request->send(204);
+              request->send(200, "application/json", getSerializedSettingData());
               break;
             default:
               request->send(405);

@@ -86,7 +86,9 @@
 			}
 
 			.container {
-				padding: 5px;
+				padding-top: 5px;
+				padding-left: 5px;
+				padding-right: 5px;
 				height: calc(100% - 105px);
 				background: rgba(0,0,0,0);
 				overflow: auto;
@@ -151,7 +153,6 @@
 				align-items: center;
 				height: 25px;
 				padding: 5px;
-				background-color: rgb(25, 25, 25);
 			}
 
 			#reboot-button {
@@ -201,147 +202,149 @@
 			<input type="button" id="navigation-button-manager" onclick="navigateToPage(this)" value="Manager" />
 			<input type="button" id="navigation-button-captive-portal" onclick="navigateToPage(this)" value="Captive Portal" />
 		</div>
-		<div class="container">
-			<div id="access-point-page">
-				<fieldset>
-					<legend> Authentication </legend>
-					<table>
-						<tr>
-							<td>SSID</td>
-							<td>
-								<input type="text" minlength="1" maxlength="32" />
-							</td>
-						</tr>
-						<tr>
-							<td>Password</td>
-							<td>
-								<input type="password" minlength="8" maxlength="63" />
-							</td>
-						</tr>
-						<tr>
-							<td>Authentication</td>
-							<td>
-								<select>
-									<option value="disabled">Disabled</option>
-									<option value="enabled">Enabled</option>
-								</select>
-							</td>
-						</tr>
-					</table>
-				</fieldset>
-				<fieldset>
-					<legend> WiFi </legend>
-					<table>
-						<tr>
-							<td>Hidden</td>
-							<td>
-								<select>
-									<option value="disabled">Disabled</option>
-									<option value="enabled">Enabled</option>
-								</select>
-							</td>
-						</tr>
-						<tr>
-							<td>Channel</td>
-							<td>
-								<input type="number" />
-							</td>
-						</tr>
-						<tr>
-							<td>Max Connections</td>
-							<td>
-								<input type="number" />
-							</td>
-						</tr>
-						<tr>
-							<td>Beacon Interval</td>
-							<td>
-								<input type="number" />
-							</td>
-						</tr>
-					</table>
-				</fieldset>
-				<fieldset>
-					<legend> Network </legend>
-					<table>
-						<tr>
-							<td>Local IP</td>
-							<td>
-								<input type="text" />
-							</td>
-						</tr>
-						<tr>
-							<td>Gateway</td>
-							<td>
-								<input type="text" />
-							</td>
-						</tr>
-						<tr>
-							<td>Subnet Mask</td>
-							<td>
-								<input type="text" />
-							</td>
-						</tr>
-					</table>
-				</fieldset>
+		<form id="setting-form">
+			<div class="container">
+				<div id="access-point-page">
+					<fieldset>
+						<legend> Authentication </legend>
+						<table>
+							<tr>
+								<td>SSID</td>
+								<td>
+									<input type="text" minlength="1" maxlength="32" id="ap-ssid-input" form="setting-form" required />
+								</td>
+							</tr>
+							<tr>
+								<td>Password</td>
+								<td>
+									<input type="password" minlength="8" maxlength="63" id="ap-password-input" form="setting-form" required />
+								</td>
+							</tr>
+							<tr>
+								<td>Authentication</td>
+								<td>
+									<select id="ap-auth-selection" form="setting-form">
+										<option value="disabled">Disabled</option>
+										<option value="enabled">Enabled</option>
+									</select>
+								</td>
+							</tr>
+						</table>
+					</fieldset>
+					<fieldset>
+						<legend> WiFi </legend>
+						<table>
+							<tr>
+								<td>Hidden</td>
+								<td>
+									<select id="ap-hidden-selection" form="setting-form">
+										<option value="disabled">Disabled</option>
+										<option value="enabled">Enabled</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Channel</td>
+								<td>
+									<input type="number" id="ap-channel-input" form="setting-form" required />
+								</td>
+							</tr>
+							<tr>
+								<td>Max Connections</td>
+								<td>
+									<input type="number" id="ap-max-connections-input" form="setting-form" required />
+								</td>
+							</tr>
+							<tr>
+								<td>Beacon Interval</td>
+								<td>
+									<input type="number" id="ap-beacon-interval-input" form="setting-form" required />
+								</td>
+							</tr>
+						</table>
+					</fieldset>
+					<fieldset>
+						<legend> Network </legend>
+						<table>
+							<tr>
+								<td>Local IP</td>
+								<td>
+									<input type="text" id="ap-local-ip-input" form="setting-form" required />
+								</td>
+							</tr>
+							<tr>
+								<td>Gateway</td>
+								<td>
+									<input type="text" id="ap-gateway-input" form="setting-form" required />
+								</td>
+							</tr>
+							<tr>
+								<td>Subnet Mask</td>
+								<td>
+									<input type="text" id="ap-subnet-mask-input" form="setting-form" required />
+								</td>
+							</tr>
+						</table>
+					</fieldset>
+				</div>
+				<div id="manager-page">
+					<fieldset>
+						<legend> Manager Authentication </legend>
+						<table>
+							<tr>
+								<td>Manager User</td>
+								<td>
+									<input type="text" maxlength="20" id="manager-user-input" form="setting-form" />
+								</td>
+							</tr>
+							<tr>
+								<td>Manager Password</td>
+								<td>
+									<input type="password" maxlength="128" id="manager-password-input" form="setting-form" />
+								</td>
+							</tr>
+						</table>
+					</fieldset>
+					<fieldset>
+						<legend> Manager Server </legend>
+						<table>
+							<tr>
+								<td>Port</td>
+								<td>
+									<input type="number" min="0" max="65535" id="manager-port-input" form="setting-form" required />
+								</td>
+							</tr>
+						</table>
+					</fieldset>
+				</div>
+				<div id="captive-portal-page">
+					<fieldset>
+						<legend> Captive Portal Server </legend>
+						<table>
+							<tr>
+								<td>IP Address</td>
+								<td>
+									<input type="text" id="captive-portal-ip-input" form="setting-form" required />
+								</td>
+							</tr>
+							<tr>
+								<td>Port</td>
+								<td>
+									<input type="number" min="0" max="65535" id="captive-portal-port-input" form="setting-form" required />
+								</td>
+							</tr>
+						</table>
+					</fieldset>
+				</div>
 			</div>
-			<div id="manager-page">
-				<fieldset>
-					<legend> Manager Authentication </legend>
-					<table>
-						<tr>
-							<td>Manager User</td>
-							<td>
-								<input type="text" maxlength="20" />
-							</td>
-						</tr>
-						<tr>
-							<td>Manager Password</td>
-							<td>
-								<input type="password" maxlength="128" />
-							</td>
-						</tr>
-					</table>
-				</fieldset>
-				<fieldset>
-					<legend> Manager Server </legend>
-					<table>
-						<tr>
-							<td>Port</td>
-							<td>
-								<input type="number" min="0" max="65535" />
-							</td>
-						</tr>
-					</table>
-				</fieldset>
+			<div class="bottom-bar">
+				<input type="button" class="bar-action-button" id="reboot-button" value="Reboot" />
+				<div>
+					<input type="button" class="bar-action-button" id="reset-button" value="Reset" />
+					<input type="submit" class="bar-action-button" id="save-button" value="Save" form="setting-form" />
+				</div>
 			</div>
-			<div id="captive-portal-page">
-				<fieldset>
-					<legend> Captive Portal Server </legend>
-					<table>
-						<tr>
-							<td>IP Address</td>
-							<td>
-								<input type="text" />
-							</td>
-						</tr>
-						<tr>
-							<td>Port</td>
-							<td>
-								<input type="number" min="0" max="65535" />
-							</td>
-						</tr>
-					</table>
-				</fieldset>
-			</div>
-		</div>
-		<div class="bottom-bar">
-			<input type="button" class="bar-action-button" id="reboot-button" value="Reboot" />
-			<div>
-				<input type="button" class="bar-action-button" id="reset-button" value="Reset" />
-				<input type="button" class="bar-action-button" id="save-button" value="Save" />
-			</div>
-		</div>
+		</form>
 		<script>
 			const logoutButton = document.getElementById("logout-button");
 			const rebootButton = document.getElementById("reboot-button");
@@ -355,11 +358,14 @@
 			const accessPointPage = document.getElementById("access-point-page");
 			const managerPage = document.getElementById("manager-page");
 			const captivePortalPage = document.getElementById("captive-portal-page");
-			
+
+			document.getElementById("setting-form").addEventListener("submit", submitEvent => {
+				submitEvent.preventDefault();
+			});
+
 			logoutButton.addEventListener("click", mouseEvent => {});
 			rebootButton.addEventListener("click", mouseEvent => {});
 			resetButton.addEventListener("click", mouseEvent => {});
-			saveButton.addEventListener("click", mouseEvent => {});
 
 			function navigateToPage(buttonElement) {
 				const isAccessPointPage = buttonElement == accessPointNavigationButton;
