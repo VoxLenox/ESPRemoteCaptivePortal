@@ -86,9 +86,7 @@
 			}
 
 			.container {
-				padding-top: 5px;
-				padding-left: 5px;
-				padding-right: 5px;
+				padding: 5px;
 				height: calc(100% - 105px);
 				background: rgba(0,0,0,0);
 				overflow: auto;
@@ -153,6 +151,7 @@
 				align-items: center;
 				height: 25px;
 				padding: 5px;
+				background-color: rgb(45, 45, 45);
 			}
 
 			#reboot-button {
@@ -359,13 +358,38 @@
 			const managerPage = document.getElementById("manager-page");
 			const captivePortalPage = document.getElementById("captive-portal-page");
 
-			document.getElementById("setting-form").addEventListener("submit", submitEvent => {
-				submitEvent.preventDefault();
+			logoutButton.addEventListener("click", mouseEvent => {
+				if (confirm("Are you sure that you want to logout?"))
+					fetch("/", {headers: {"Authorization": "Basic "}}).then(response => {
+						const statusCode = response.status;
+						if (statusCode === 401)
+							location.reload();
+						else
+							throw new Error(`Unexpected response code: ${statusCode}`);
+					}).catch(err => {
+						console.error(err);
+						alert("Failed to logout due to an unexpected error");
+					});
 			});
 
-			logoutButton.addEventListener("click", mouseEvent => {});
-			rebootButton.addEventListener("click", mouseEvent => {});
-			resetButton.addEventListener("click", mouseEvent => {});
+			rebootButton.addEventListener("click", mouseEvent => {
+				if (confirm("Are you sure that you want to reboot your ESP?")) {
+					
+				}
+			});
+
+			resetButton.addEventListener("click", mouseEvent => {
+				if (confirm("Are you sure that you want to reset all settings?")) {
+					
+				}
+			});
+
+			document.getElementById("setting-form").addEventListener("submit", submitEvent => {
+				submitEvent.preventDefault();
+				if(!saveButton.disabled) {
+					
+				}
+			});
 
 			function navigateToPage(buttonElement) {
 				const isAccessPointPage = buttonElement == accessPointNavigationButton;
