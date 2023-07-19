@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>ESP Manager</title>
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+			}
+
+			body {
+				width: 100%;
+				background-color: rgb(50, 50, 50);
+				font-family: Arial;
+				color: white
+			}
+
+			.bar-action-button {
+				height: 100%;
+				padding-left: 10px;
+				padding-right: 10px;
+				border-width: 1px;
+				border-style: solid;
+				border-radius: 2.5px;
+				background-color: rgb(35, 35, 35);
+				font-weight: bold;
+			}
+
+			.bar-action-button:disabled {
+				filter: brightness(0.4);
+			}
+
+			.bar-action-button:hover:enabled {
+				filter: brightness(1.5);
+			}
+
+			.top-bar {
+				position: fixed;
+				height: 25px;
+				width: 100%;
+				padding-top: 5px;
+				padding-bottom: 5px;
+				padding-left: 10px;
+				padding-right: 5px;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				background-color: rgb(40, 40, 40);
+			}
+
+			.top-bar > h2 {
+				color: rgb(100, 100, 100);
+			}
+
+			#logout-button {
+				color: rgb(255, 0, 0);
+				border-color: rgb(255, 0, 0);
+			}
+
+			#logout-button:active:enabled {
+				background-color: rgb(255, 0, 0);
+				color: white;
+			}
+
+			.nav-bar {
+				position: fixed;
+				margin-top: 35px;
+				height: 25px;
+				width: 100%;
+				background-color: rgb(35, 35, 35);
+			}
+
+			.container {
+				position: fixed;
+				margin-top: 60px;
+				width: 100%;
+				height: calc(100% - 95px);
+				overflow: auto;
+			}
+
+			.bottom-bar {
+				position: fixed;
+				bottom: 0;
+				width: 100%;
+				height: 25px;
+				padding: 5px;
+				background-color: rgb(40, 40, 40);
+			}
+		</style>
+	</head>
+	<body>
+		<div class="top-bar">
+			<h2>ESP Manager</h2>
+			<button id="logout-button" class="bar-action-button">Logout</button>
+		</div>
+		<div class="nav-bar"></div>
+		<div class="container"></div>
+		<div class="bottom-bar"></div>
+		<script></script>
+	</body>
+</html>
