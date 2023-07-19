@@ -3,133 +3,377 @@
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Remote Captive Portal Manager</title>
+		<title>ESP Manager</title>
 		<style>
 			* {
 				margin: 0;
 				padding: 0;
 			}
 
-			#login-container {
-				display: none;
-				justify-content: center;
-				align-items: center;
-				height: 100vh;
+			body {
+				background-color: rgb(60, 60, 60);
+				font-family: Arial;
+				color: white;
 			}
 
-			#login-form {
-				width: 300px;
-				padding: 20px;
-				background-color: rgb(240, 240, 240);
-				border-radius: 5px;
+			.top-bar {
 				display: flex;
-				flex-direction: column;
-				align-items: stretch;
-				box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.15);
+				justify-content: space-between;
+				align-items: center;
+				height: 25px;
+				padding-top: 5px;
+				padding-bottom: 5px;
+				padding-left: 10px;
+				padding-right: 5px;
+				background-color: rgb(45, 45, 45);
 			}
 
-			.login-form-title {
-				color: rgb(60, 60, 60);
-				text-align: center;
-				margin-bottom: 5px;
+			.top-bar h2 {
+				color: rgb(150, 150, 150);
 			}
 
-			.login-bar {
-				width: 50%;
-				border: 1px solid rgb(200, 200, 200);
-				border-radius: 1px;
-				margin: 0 auto;
-				margin-bottom: 10px;
+			.bar-action-button {
+				height: 100%;
+				padding-left: 10px;
+				padding-right: 10px;
+				border-width: 1px;
+				border-style: solid;
+				border-radius: 2.5px;
+				background-color: rgb(35, 35, 35);
+				font-weight: bold;
 			}
 
-			#login-password {
-				width: 100%;
-				padding: 10px;
-				box-sizing: border-box;
-				border: 1px solid rgb(100, 100, 100);
-				border-radius: 5px;
+			.bar-action-button:disabled {
+				filter: brightness(0.4);
 			}
 
-			#login-error {
-				display: none;
-				color: rgb(255, 50, 50);
-				font-family: Arial, Helvetica, sans-serif;
-				font-size: small;
-				margin-top: 2px;
-				margin-bottom: -3px;
+			.bar-action-button:hover:enabled {
+				filter: brightness(1.5);
 			}
 
-			.login-save-label {
+			#logout-button {
+				color: rgb(255, 0, 0);
+				border-color: rgb(255, 0, 0);
+			}
+
+			#logout-button:active:enabled {
+				background-color: rgb(255, 0, 0);
+				color: white;
+			}
+
+			.navigation-bar {
 				display: flex;
 				align-items: center;
-				font-size: small;
-				margin-top: 5px;
+				height: 25px;
+				background-color: rgb(25, 25, 25);
 			}
 
-			#login-save-checkbox {
-				margin-right: 5px;
-			}
-
-			#login-button {
-				width: 100%;
-				padding: 10px;
-				margin-top: 5px;
-				box-sizing: border-box;
-				background-color: #4CAF50;
+			.navigation-bar input[type=button] {
+				height: 100%;
+				padding-left: 10px;
+				padding-right: 10px;
+				background-color: rgba(60, 60, 60, 0);
 				color: white;
 				border: none;
-				border-radius: 5px;
 			}
 
-			@media (max-width: 500px) {
-				.login-form {
-					width: 80%;
-				}
+			.navigation-bar input[type=button]:hover:active {
+				background-color: rgb(60, 60, 60);
+			}
+
+			.navigation-bar input[state=selected] {
+				background-color: rgb(60, 60, 60);
+			}
+
+			.container {
+				padding: 5px;
+				height: calc(100% - 105px);
+				background: rgba(0,0,0,0);
+				overflow: auto;
+			}
+
+			#manager-page, #captive-portal-page, #information-page {
+				display: none;
+			}
+
+			.container div fieldset {
+				border: 1px solid rgb(150, 150, 150);
+				border-radius: 2.5px;
+				margin-bottom: 10px;
+				padding-bottom: 6.5px;
+				padding-left: 10px;
+				padding-right: 10px;
+			}
+			
+			.container div fieldset table {
+				width: 100%;
+			}
+			
+			.container div fieldset table tr td select {
+				padding-top: 2.5px;
+				padding-bottom: 2.5px;
+				padding-left: 10px;
+				padding-right: 5px;
+				border-radius: 2.5px;
+				color: white;
+				background-color: rgb(35, 35, 35);
+				outline: none;
+				border: none;
+			}
+			
+			.container div fieldset table tr td input {
+				padding-top: 2.5px;
+				padding-bottom: 2.5px;
+				padding-left: 5px;
+				padding-right: 5px;
+				border-radius: 2.5px;
+				color: white;
+				background-color: rgb(35, 35, 35);
+				outline: none;
+				border: none;
+			}
+			
+			.container div table tr {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 2.5px;
+			}
+
+			.container div legend {
+				white-space: pre;
+				margin-left: 15px;
+			}
+
+			.bottom-bar {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				height: 25px;
+				padding: 5px;
+				background-color: rgb(25, 25, 25);
+			}
+
+			#reboot-button {
+				color: rgb(255, 0, 0);
+				border-color: rgb(255, 0, 0);
+			}
+
+			#reboot-button:active:enabled {
+				background-color: rgb(255, 0, 0);
+				color: white;
+			}
+
+			.bottom-bar div {
+				display: flex;
+				height: 100%;
+			}
+
+			#reset-button {
+				color: rgb(255, 0, 0);
+				border-color: rgb(255, 0, 0);
+			}
+
+			#reset-button:active:enabled {
+				background-color: rgb(255, 0, 0);
+				color: white;
+			}
+
+			#save-button {
+				color: rgb(0, 225, 0);
+				border-color: rgb(0, 225, 0);
+				margin-left: 5px;
+			}
+			
+			#save-button:active:enabled {
+				background-color: rgb(0, 255, 0);
+				color: white;
 			}
 		</style>
 	</head>
 	<body>
-		<div id="login-container">
-			<form id="login-form">
-				<h2 class="login-form-title">LOGIN</h2>
-				<hr class="login-bar" />
-				<input type="password" placeholder="Enter password" id="login-password" required />
-				<p id="login-error">An unexpected error has occurred, please try again</p>
-				<label class="login-save-label">
-					<input type="checkbox" id="login-save-checkbox" />
-					Save password
-				</label>
-				<button id="login-button" type="submit">Login</button>
-			</form>
+		<div class="top-bar">
+			<h2>ESP Manager</h2>
+			<input type="button" class="bar-action-button" id="logout-button" value="Logout" />
+		</div>
+		<div class="navigation-bar">
+			<input type="button" id="navigation-button-access-point" onclick="navigateToPage(this)" state="selected" value="Access Point" />
+			<input type="button" id="navigation-button-manager" onclick="navigateToPage(this)" value="Manager" />
+			<input type="button" id="navigation-button-captive-portal" onclick="navigateToPage(this)" value="Captive Portal" />
+		</div>
+		<div class="container">
+			<div id="access-point-page">
+				<fieldset>
+					<legend> Authentication </legend>
+					<table>
+						<tr>
+							<td>SSID</td>
+							<td>
+								<input type="text" minlength="1" maxlength="32" />
+							</td>
+						</tr>
+						<tr>
+							<td>Password</td>
+							<td>
+								<input type="password" minlength="8" maxlength="63" />
+							</td>
+						</tr>
+						<tr>
+							<td>Authentication</td>
+							<td>
+								<select>
+									<option value="disabled">Disabled</option>
+									<option value="enabled">Enabled</option>
+								</select>
+							</td>
+						</tr>
+					</table>
+				</fieldset>
+				<fieldset>
+					<legend> WiFi </legend>
+					<table>
+						<tr>
+							<td>Hidden</td>
+							<td>
+								<select>
+									<option value="disabled">Disabled</option>
+									<option value="enabled">Enabled</option>
+								</select>
+							</td>
+						</tr>
+						<tr>
+							<td>Channel</td>
+							<td>
+								<input type="number" />
+							</td>
+						</tr>
+						<tr>
+							<td>Max Connections</td>
+							<td>
+								<input type="number" />
+							</td>
+						</tr>
+						<tr>
+							<td>Beacon Interval</td>
+							<td>
+								<input type="number" />
+							</td>
+						</tr>
+					</table>
+				</fieldset>
+				<fieldset>
+					<legend> Network </legend>
+					<table>
+						<tr>
+							<td>Local IP</td>
+							<td>
+								<input type="text" />
+							</td>
+						</tr>
+						<tr>
+							<td>Gateway</td>
+							<td>
+								<input type="text" />
+							</td>
+						</tr>
+						<tr>
+							<td>Subnet Mask</td>
+							<td>
+								<input type="text" />
+							</td>
+						</tr>
+					</table>
+				</fieldset>
+			</div>
+			<div id="manager-page">
+				<fieldset>
+					<legend> Manager Authentication </legend>
+					<table>
+						<tr>
+							<td>Manager User</td>
+							<td>
+								<input type="text" maxlength="20" />
+							</td>
+						</tr>
+						<tr>
+							<td>Manager Password</td>
+							<td>
+								<input type="password" maxlength="128" />
+							</td>
+						</tr>
+					</table>
+				</fieldset>
+				<fieldset>
+					<legend> Manager Server </legend>
+					<table>
+						<tr>
+							<td>Port</td>
+							<td>
+								<input type="number" min="0" max="65535" />
+							</td>
+						</tr>
+					</table>
+				</fieldset>
+			</div>
+			<div id="captive-portal-page">
+				<fieldset>
+					<legend> Captive Portal Server </legend>
+					<table>
+						<tr>
+							<td>IP Address</td>
+							<td>
+								<input type="text" />
+							</td>
+						</tr>
+						<tr>
+							<td>Port</td>
+							<td>
+								<input type="number" min="0" max="65535" />
+							</td>
+						</tr>
+					</table>
+				</fieldset>
+			</div>
+		</div>
+		<div class="bottom-bar">
+			<input type="button" class="bar-action-button" id="reboot-button" value="Reboot" />
+			<div>
+				<input type="button" class="bar-action-button" id="reset-button" value="Reset" />
+				<input type="button" class="bar-action-button" id="save-button" value="Save" />
+			</div>
 		</div>
 		<script>
-			const originUrl = location.origin;
+			const logoutButton = document.getElementById("logout-button");
+			const rebootButton = document.getElementById("reboot-button");
+			const resetButton = document.getElementById("reset-button");
+			const saveButton = document.getElementById("save-button");
 
-			const loginContainer = document.getElementById("login-container");
-			const passwordInput = document.getElementById("login-password");
-			const loginErrorText = document.getElementById("login-error");
-			const savePasswordCheckbox = document.getElementById("login-save-checkbox");
+			const accessPointNavigationButton = document.getElementById("navigation-button-access-point");
+			const managerNavigationButton = document.getElementById("navigation-button-manager");
+			const captivePortalNavigationButton = document.getElementById("navigation-button-captive-portal");
 
-			document.getElementById("login-form").addEventListener("submit", submitEvent => {
-				submitEvent.preventDefault();
-				const password = passwordInput.checked;
-				const savePassword = savePasswordCheckbox.value;
-				fetch(`${originUrl}/api`).then(response => {
-					
-				}).catch(err => {
-					
-				});
-			});
+			const accessPointPage = document.getElementById("access-point-page");
+			const managerPage = document.getElementById("manager-page");
+			const captivePortalPage = document.getElementById("captive-portal-page");
+			
+			logoutButton.addEventListener("click", mouseEvent => {});
+			rebootButton.addEventListener("click", mouseEvent => {});
+			resetButton.addEventListener("click", mouseEvent => {});
+			saveButton.addEventListener("click", mouseEvent => {});
 
-			const savedLoginPassword = sessionStorage.getItem("savedPassword") ?? localStorage.getItem("savedPassword");
-			if (savedLoginPassword != null)
-				fetch(`${originUrl}/api`).then(response => {
-					
-				}).catch(err => {
-					
-				});
-			else
-				loginContainer.style.display = "flex";
+			function navigateToPage(buttonElement) {
+				const isAccessPointPage = buttonElement == accessPointNavigationButton;
+				accessPointNavigationButton.setAttribute("state", isAccessPointPage ? "selected" : "unselected");
+				accessPointPage.style.display = isAccessPointPage ? "block" : "none";
+				
+				const isManagerPage = buttonElement == managerNavigationButton;
+				managerNavigationButton.setAttribute("state", isManagerPage ? "selected" : "unselected");
+				managerPage.style.display = isManagerPage ? "block" : "none";
+				
+				const isCaptivePortalPage = buttonElement == captivePortalNavigationButton;
+				captivePortalNavigationButton.setAttribute("state", isCaptivePortalPage ? "selected" : "unselected");
+				captivePortalPage.style.display = isCaptivePortalPage ? "block" : "none";
+			}
 		</script>
 	</body>
 </html>
