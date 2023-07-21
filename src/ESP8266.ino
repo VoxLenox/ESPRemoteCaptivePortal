@@ -5,7 +5,7 @@
 #include <ESPAsyncWebServer.h>
 #include <StreamUtils.h>
 
-const uint64_t CURRENT_DATA_VERSION = 2;
+const uint64_t CURRENT_DATA_VERSION = 1;
 const int SETTING_DATA_ADDRESS = 0;
 
 EepromStream eepromStream(0, SPI_FLASH_SEC_SIZE);
