@@ -129,11 +129,11 @@ void setup() {
             case HTTP_POST:
               // Add logic to verify settings
               saveSettings();
-              request->send(200, "application/json", getSerializedSettingData());
+              request->send(204);
               break;
             case HTTP_DELETE:
               resetSettings();
-              request->send(200, "application/json", getSerializedSettingData());
+              request->send(204);
               break;
             default:
               request->send(405);
