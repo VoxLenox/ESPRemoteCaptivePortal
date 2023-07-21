@@ -108,7 +108,7 @@
 			}
 
 			#setting-form > fieldset > div > input {
-				width: 100%;
+				width: calc(100% - 20px);
 				height: 25px;
 				padding-left: 7.5px;
 				padding-right: 7.5px;
@@ -220,8 +220,8 @@
 					</div>
 					<div>
 						<h3>Password</h3>
-						<input type="password" minlength="1" maxlength="63" placeholder="Enter your Wi-Fi password" id="ap-password-input" required />
-						<input type="password" minlength="1" maxlength="63" placeholder="Re-enter your Wi-Fi password" id="ap-password-confirm-input" required />
+						<input type="password" minlength="8" maxlength="63" placeholder="Enter your Wi-Fi password" id="ap-password-input" required />
+						<input type="password" minlength="8" maxlength="63" placeholder="Re-enter your Wi-Fi password" id="ap-password-confirm-input" />
 						<label>
 							<input type="checkbox" id="ap-show-password-checkbox" />
 							Show password
@@ -412,11 +412,42 @@
 				submitEvent.preventDefault();
 				if (!saveButton.disabled) {
 					setActionButtonDisabled(true);
-					// Summarize data
-					// Submit data
-					// Check for submission state
-					// Reload if success
-					// Alert if failed
+					fetch("/api?type=settings", {
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json"
+						},
+						body: JSON.stringify({
+							apSSID: apSSIDInput.value,
+							apPassword: apPasswordInput.value,
+							apAuth: apAuthSelect.value === "enabled",
+							apHidden: apHiddenSelect.value === "enabled",
+							apChannel: Number(apChannelInput.value),
+							apMaxConnections: Number(apMaxConnectionsInput.value),
+							apBeaconInterval: Number(apBeaconIntervalInput.value),
+							apLocalIP: apLocalIPInput.value.split(".").map(octetValue => Number(octetValue)),
+							apGateway: apGatewayInput.value.split(".").map(octetValue => Number(octetValue)),
+							apSubnet: apSubnetMaskInput.value.split(".").map(octetValue => Number(octetValue)),
+
+							managerUser: managerUserInput.value,
+							managerPassword: managerPasswordInput.value,
+							managerPort: Number(managerPortInput.value),
+
+							captivePortalIP: cpIPInput.value.split(".").map(octetValue => Number(octetValue)),
+							captivePortalPort: Number(cpPortInput.value)
+						})
+					}).then(response => {
+						const statusCode = response.status;
+						if (statusCode === 204) {
+							alert("For some changes to take effect, you will need to reboot your ESP.");
+							location.reload();
+						} else
+							throw new Error(`Unexpected response status code: ${statusCode}`);
+					}).catch(err => {
+						console.error(err);
+						setActionButtonDisabled(false);
+						alert("Failed to save the settings due to an unexpected error.");
+					})
 				}
 			});
 
@@ -430,6 +461,7 @@
 				const newPassword = apPasswordInput.value;
 				const passwordChanged = newPassword !== currentAPPassword;
 				apPasswordConfirmInput.pattern = createConfirmPattern(newPassword);
+				apPasswordConfirmInput.required = passwordChanged;
 				if (passwordChanged && apPasswordConfirmInput.style.display === "none")
 					apPasswordConfirmInput.value = "";
 				apPasswordConfirmInput.style.display = passwordChanged ? "block" : "none";
@@ -441,6 +473,7 @@
 				const newPassword = managerPasswordInput.value;
 				const passwordChanged = newPassword !== currentManagerPassword;
 				managerPasswordConfirmInput.pattern = createConfirmPattern(newPassword);
+				managerPasswordConfirmInput.required = passwordChanged;
 				if (passwordChanged && managerPasswordConfirmInput.style.display === "none")
 					managerPasswordConfirmInput.value = "";
 				managerPasswordConfirmInput.style.display = passwordChanged ? "block" : "none";
@@ -465,11 +498,11 @@
 						apSSIDInput.value = data.apSSID;
 						currentAPPassword = data.apPassword;
 						apPasswordInput.value = data.apPassword;
-						apAuthSelect.value = data.auth ? "enabled" : "disabled";
-						apHiddenSelect.value = data.hidden ? "enabled" : "disabled";
-						apChannelInput.value = data.channel;
-						apMaxConnectionsInput.value = data.maxConnections;
-						apBeaconIntervalInput.value = data.beaconInterval;
+						apAuthSelect.value = data.apAuth ? "enabled" : "disabled";
+						apHiddenSelect.value = data.apHidden ? "enabled" : "disabled";
+						apChannelInput.value = data.apChannel;
+						apMaxConnectionsInput.value = data.apMaxConnections;
+						apBeaconIntervalInput.value = data.apBeaconInterval;
 						apLocalIPInput.value = data.apLocalIP.join(".");
 						apGatewayInput.value = data.apGateway.join(".");
 						apSubnetMaskInput.value = data.apSubnet.join(".");
