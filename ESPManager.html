@@ -358,7 +358,7 @@
 			logoutButton.addEventListener("click", mouseEvent => {
 				if (confirm("Are you sure that you want to logout?")) {
 					setActionButtonDisabled(true);
-					fetch("/", {headers: {Authorization: "Basic "}}).then(response => {
+					fetch("/api?type=logout", {method: "POST"}).then(response => {
 						const statusCode = response.status;
 						if (statusCode === 401) {
 							document.body.style.display = "none";
@@ -414,9 +414,7 @@
 					setActionButtonDisabled(true);
 					fetch("/api?type=settings", {
 						method: "POST",
-						headers: {
-							"Content-Type": "application/json"
-						},
+						headers: {"Content-Type": "application/json"},
 						body: JSON.stringify({
 							apSSID: apSSIDInput.value,
 							apPassword: apPasswordInput.value,

@@ -426,7 +426,7 @@ const char* htmlContent = R"=====(<!DOCTYPE html>
 			logoutButton.addEventListener("click", mouseEvent => {
 				if (confirm("Are you sure that you want to logout?")) {
 					setActionButtonDisabled(true);
-					fetch("/", {headers: {Authorization: "Basic "}}).then(response => {
+					fetch("/api?type=logout", {method: "POST"}).then(response => {
 						const statusCode = response.status;
 						if (statusCode === 401) {
 							document.body.style.display = "none";
@@ -482,9 +482,7 @@ const char* htmlContent = R"=====(<!DOCTYPE html>
 					setActionButtonDisabled(true);
 					fetch("/api?type=settings", {
 						method: "POST",
-						headers: {
-							"Content-Type": "application/json"
-						},
+						headers: {"Content-Type": "application/json"},
 						body: JSON.stringify({
 							apSSID: apSSIDInput.value,
 							apPassword: apPasswordInput.value,
@@ -669,6 +667,11 @@ void setup() {
             ESP.restart();
           } else
             request->send(405);
+        else if (apiType.equals("logout"))
+          if (request->method() == HTTP_POST) {
+            request->send(401);
+          } else
+            request->send(405);
         else
           request->send(400);
       } else
@@ -677,7 +680,7 @@ void setup() {
       request->requestAuthentication();
   }, NULL, [](AsyncWebServerRequest * request, uint8_t *data, size_t len, size_t index, size_t total) {
     if (request->url() == "/api" && request->hasParam("type") && request->getParam("type")->value() == "settings" && request->method() == HTTP_POST)
-      if (request->getHeader("Content-Type")->value().equals("application/json")) {
+      if (request->contentType() == "application/json") {
         DeserializationError bodyDeserializationError = deserializeJson(settings, data);
         settings["dataVersion"] = CURRENT_DATA_VERSION;
         saveSettings();
