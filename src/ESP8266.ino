@@ -66,14 +66,7 @@ void setLedBrightness(const float &brightness = 0) {
   digitalWrite(LED_BUILTIN, 1 - brightness);
 }
 
-String decodeData(uint8_t* data, size_t length) {
-  String decodedData;
-  for (size_t i = 0; i < length; i++)
-    decodedData += (char)data[i];
-  return decodedData;
-}
-
-const char* htmlContent = R"=====(<!DOCTYPE html>
+const char* managerPageHtml = R"=====(<!DOCTYPE html>
 <html>
 	<head>
 		<meta charset="UTF-8">
@@ -86,6 +79,7 @@ const char* htmlContent = R"=====(<!DOCTYPE html>
 			}
 
 			body {
+				display: none;
 				background-color: rgb(50, 50, 50);
 				font-family: Arial;
 				color: white
@@ -396,6 +390,8 @@ const char* htmlContent = R"=====(<!DOCTYPE html>
 			</div>
 		</div>
 		<script>
+			const {body} = document;
+
 			const logoutButton = document.getElementById("logout-button");
 			const rebootButton = document.getElementById("reboot-button");
 			const resetButton = document.getElementById("reset-button");
@@ -436,7 +432,7 @@ const char* htmlContent = R"=====(<!DOCTYPE html>
 					fetch("/api?type=logout", {method: "POST"}).then(response => {
 						const statusCode = response.status;
 						if (statusCode === 401) {
-							document.body.style.display = "none";
+							body.style.display = "none";
 							location.reload();
 						} else
 							throw new Error(`Unexpected response status code: ${statusCode}`);
@@ -454,7 +450,7 @@ const char* htmlContent = R"=====(<!DOCTYPE html>
 					fetch("/api?type=reboot", {method: "POST"}).then(response => {
 						const statusCode = response.status;
 						if (statusCode === 204)
-							setTimeout(location.reload, 1000);
+							location.reload();
 						else
 							throw new Error(`Unexpected response status code: ${statusCode}`);
 					}).catch(err => {
@@ -594,7 +590,7 @@ const char* htmlContent = R"=====(<!DOCTYPE html>
 				console.error(err);
 				if (confirm("An unexpected error has occurred while loading this page, do you wish to reload the page?"))
 					location.reload();
-			});
+			}).finally(() => body.style.display = "block");
 		</script>
 	</body>
 </html>)=====";
@@ -670,8 +666,10 @@ void setup() {
           }
         else if (apiType.equals("reboot"))
           if (request->method() == HTTP_POST) {
+            request->onDisconnect([]() {
+              ESP.restart();
+            });
             request->send(204);
-            ESP.restart();
           } else
             request->send(405);
         else if (apiType.equals("logout"))
@@ -685,15 +683,19 @@ void setup() {
         request->send(400);
     else
       request->requestAuthentication();
-  }, NULL, [](AsyncWebServerRequest * request, uint8_t *data, size_t length, size_t index, size_t total) {
+  }, NULL, [](AsyncWebServerRequest * request, uint8_t *data, size_t len, size_t index, size_t total) {
     if (request->url() == "/api" && request->hasParam("type") && request->getParam("type")->value() == "settings" && request->method() == HTTP_POST)
       if (request->contentType() == "application/json") {
-        DeserializationError bodyDeserializationError = deserializeJson(settings, decodeData(data, length));
-        settings["dataVersion"] = CURRENT_DATA_VERSION;
-        saveSettings();
-        if (bodyDeserializationError == DeserializationError::Ok)
+        String body;
+        for (size_t i = 0; i < len; i++)
+          body += (char)data[i];
+        DeserializationError bodyDeserializationError = deserializeJson(settings, body);
+        if (bodyDeserializationError == DeserializationError::Ok) {
+          settings["dataVersion"] = CURRENT_DATA_VERSION;
+          saveSettings();
+          Serial.println("Setting updated: " + body);
           request->send(204);
-        else if (bodyDeserializationError == DeserializationError::NoMemory)
+        } else if (bodyDeserializationError == DeserializationError::NoMemory)
           request->send(507);
         else
           request->send(400);
@@ -704,7 +706,7 @@ void setup() {
   managerWebServer.onNotFound([](AsyncWebServerRequest *request) {
     if (request->authenticate(settings["managerUser"].as<const char*>(), settings["managerPassword"].as<const char*>()))
       if (request->method() == HTTP_GET) {
-        request->send_P(200, "text/html", htmlContent);
+        request->send_P(200, "text/html", managerPageHtml);
       } else
         request->send(405);
     else

@@ -11,6 +11,7 @@
 			}
 
 			body {
+				display: none;
 				background-color: rgb(50, 50, 50);
 				font-family: Arial;
 				color: white
@@ -321,6 +322,8 @@
 			</div>
 		</div>
 		<script>
+			const {body} = document;
+
 			const logoutButton = document.getElementById("logout-button");
 			const rebootButton = document.getElementById("reboot-button");
 			const resetButton = document.getElementById("reset-button");
@@ -361,7 +364,7 @@
 					fetch("/api?type=logout", {method: "POST"}).then(response => {
 						const statusCode = response.status;
 						if (statusCode === 401) {
-							document.body.style.display = "none";
+							body.style.display = "none";
 							location.reload();
 						} else
 							throw new Error(`Unexpected response status code: ${statusCode}`);
@@ -519,7 +522,7 @@
 				console.error(err);
 				if (confirm("An unexpected error has occurred while loading this page, do you wish to reload the page?"))
 					location.reload();
-			});
+			}).finally(() => body.style.display = "block");
 		</script>
 	</body>
 </html>
