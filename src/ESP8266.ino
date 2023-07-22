@@ -66,6 +66,13 @@ void setLedBrightness(const float &brightness = 0) {
   digitalWrite(LED_BUILTIN, 1 - brightness);
 }
 
+String decodeData(uint8_t* data, size_t length) {
+  String decodedData;
+  for (size_t i = 0; i < length; i++)
+    decodedData += (char)data[i];
+  return decodedData;
+}
+
 const char* htmlContent = R"=====(<!DOCTYPE html>
 <html>
 	<head>
@@ -447,7 +454,7 @@ const char* htmlContent = R"=====(<!DOCTYPE html>
 					fetch("/api?type=reboot", {method: "POST"}).then(response => {
 						const statusCode = response.status;
 						if (statusCode === 204)
-							location.reload();
+							setTimeout(location.reload, 1000);
 						else
 							throw new Error(`Unexpected response status code: ${statusCode}`);
 					}).catch(err => {
@@ -678,10 +685,10 @@ void setup() {
         request->send(400);
     else
       request->requestAuthentication();
-  }, NULL, [](AsyncWebServerRequest * request, uint8_t *data, size_t len, size_t index, size_t total) {
+  }, NULL, [](AsyncWebServerRequest * request, uint8_t *data, size_t length, size_t index, size_t total) {
     if (request->url() == "/api" && request->hasParam("type") && request->getParam("type")->value() == "settings" && request->method() == HTTP_POST)
       if (request->contentType() == "application/json") {
-        DeserializationError bodyDeserializationError = deserializeJson(settings, data);
+        DeserializationError bodyDeserializationError = deserializeJson(settings, decodeData(data, length));
         settings["dataVersion"] = CURRENT_DATA_VERSION;
         saveSettings();
         if (bodyDeserializationError == DeserializationError::Ok)
