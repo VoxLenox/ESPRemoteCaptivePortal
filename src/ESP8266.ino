@@ -25,8 +25,8 @@ void saveSettings() {
 void resetSettings() {
   settings["dataVersion"]        = CURRENT_DATA_VERSION;
 
-  settings["apSSID"]             = "ESP8266"; // 32
-  settings["apPassword"]         = "12345678"; // 63
+  settings["apSSID"]             = "ESPRCP";
+  settings["apPassword"]         = "12345678";
   settings["apAuth"]               = false;
   settings["apHidden"]             = false;
   settings["apChannel"]            = 1;
@@ -48,8 +48,8 @@ void resetSettings() {
   settings["apSubnet"][2]        = 255;
   settings["apSubnet"][3]        = 0;
 
-  settings["managerUser"]        = "manager"; // 20
-  settings["managerPassword"]    = "12345678"; // 128
+  settings["managerUser"]        = "manager";
+  settings["managerPassword"]    = "12345678";
   settings["managerPort"]        = 8000;
 
   settings["captivePortalIP"][0] = 192;
