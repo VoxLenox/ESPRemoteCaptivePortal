@@ -596,28 +596,13 @@ const char* managerPageHtml = R"=====(<!DOCTYPE html>
 </html>)=====";
 
 void setup() {
-  Serial.begin(9600);
-  Serial.println("Starting...");
-  Serial.println("Current data version: " + CURRENT_DATA_VERSION);
-  Serial.println("Setting data address: " + SETTING_DATA_ADDRESS);
-  Serial.println("Setting data size & EEPROM size: " + SPI_FLASH_SEC_SIZE);
   EEPROM.begin(SPI_FLASH_SEC_SIZE);
   pinMode(LED_BUILTIN, OUTPUT);
   setLedBrightness(LOW);
 
   DeserializationError deserializationError = deserializeJson(settings, eepromStream);
-  Serial.println("Deserialized data from EEPROM: " + getSerializedSettingData());
-  Serial.println("Validating setting data...");
-  if (deserializationError != DeserializationError::Ok) {
-    Serial.println("Resetting setting data due to error: " + String(deserializationError.c_str()));
+  if (deserializationError != DeserializationError::Ok || settings["dataVersion"].as<uint64_t>() != CURRENT_DATA_VERSION)
     resetSettings();
-  } else if (settings["dataVersion"].as<uint64_t>() != CURRENT_DATA_VERSION) {
-    Serial.println("Resetting setting data due to data version not matched");
-    resetSettings();
-  } else
-    Serial.println("Setting data is valid");
-
-  Serial.println("Current setting data: " + getSerializedSettingData());
 
   const IPAddress apLocalIP(
     settings["apLocalIP"][0].as<uint8_t>(),
@@ -626,7 +611,6 @@ void setup() {
     settings["apLocalIP"][3].as<uint8_t>()
   );
 
-  Serial.println("Setting up access point...");
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(
     apLocalIP,
@@ -641,9 +625,7 @@ void setup() {
     settings["apMaxConnections"].as<int>(),
     settings["apBeaconInterval"].as<int>()
   );
-  Serial.println("Access point is now ready for connections");
 
-  Serial.println("Setting up manager web server...");
   AsyncWebServer managerWebServer(settings["managerPort"].as<uint16_t>());
 
   managerWebServer.on("/api", HTTP_ANY, [](AsyncWebServerRequest *request) {
@@ -693,7 +675,6 @@ void setup() {
         if (bodyDeserializationError == DeserializationError::Ok) {
           settings["dataVersion"] = CURRENT_DATA_VERSION;
           saveSettings();
-          Serial.println("Setting updated: " + body);
           request->send(204);
         } else if (bodyDeserializationError == DeserializationError::NoMemory)
           request->send(507);
@@ -714,9 +695,7 @@ void setup() {
   });
 
   managerWebServer.begin();
-  Serial.println("Manager web server is now ready for requests");
 
-  Serial.println("Setting up a redirection server...");
   AsyncWebServer redirectionWebServer(80);
 
   redirectionWebServer.onNotFound([](AsyncWebServerRequest *request) {
@@ -732,13 +711,9 @@ void setup() {
   });
 
   redirectionWebServer.begin();
-  Serial.println("Redirection server is now ready for requests");
 
-  Serial.println("Setting up DNS server...");
   DNSServer dnsServer;
   dnsServer.start(53, "*", apLocalIP);
-  Serial.println("DNS server is now ready");
-  Serial.println("Everything ready");
 
   while (true) {
     dnsServer.processNextRequest();
