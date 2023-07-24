@@ -25,4 +25,4 @@ Here are the steps to setup this program after installation:
 * There are several settings that I'm not recommend touching without knowing what you're doing: local IP address, gateway, subnet mask, max connections, beacon interval.
 * Do not mess with the backend APIs because it does not validate the data you send, messing with it might cause the access point or manager panel become inaccessible and you will have to do a reinstallation.
 * Will add support for other boards in future.
-* I'll continue develop this if it worth to invest ¯\\_(ツ)_/¯
+* I'll continue develop this if it worth to invest ¯\\\_(ツ)\_/¯
