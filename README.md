@@ -9,7 +9,7 @@ There are two ways to install this:
 ### 2. Compile the program by yourself
 * Download Arduino IDE or any IDE that have the ability compile/upload firmwares if you haven't.
 * Ensure that you have all of these dependencies installed: [ArduinoJson](https://github.com/bblanchon/ArduinoJson), [ESPAsyncWebServer](https://github.com/me-no-dev/ESPAsyncWebServer), [StreamUtils](https://github.com/bblanchon/ArduinoStreamUtils).
-* Select and download the correct source code for your ESP board from [here](https://github.com/VoxLenox/ESPRemoteCaptivePortal/tree/main/src) and open it in your IDE
+* Select and download the correct source code for your ESP board from [here](https://github.com/VoxLenox/ESPRemoteCaptivePortal/tree/main/src) and open it in your IDE.
 * Connect the ESP board to your device.
 * Compile then upload the firmware into your ESP board.
 ## ⚙️ Setting up
