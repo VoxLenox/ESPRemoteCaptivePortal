@@ -4,7 +4,7 @@ This is a simple program made for ESP boards. It allows you to create your own c
 ## 💾 Installation
 There are two ways to install this:
 ### 1. Use prebuilt binaries
-* Download the correct binary file for your ESP board [here](https://github.com/VoxLenox/ESPRemoteCaptivePortal/tree/main/bins).
+* Download the correct binary file for your ESP board [here](https://github.com/VoxLenox/ESPRemoteCaptivePortal/tree/main/bin).
 * Use an software to upload the firmware into your ESP board. Here are some of my recommendations [esp.huhn.me](https://esp.huhn.me), [NodeMCU Flasher](https://github.com/nodemcu/nodemcu-flasher), [esptool](https://github.com/espressif/esptool).
 ### 2. Compile the program by yourself
 * Download Arduino IDE or any IDE that have the ability compile/upload firmwares if you haven't.
